@@ -1,0 +1,155 @@
+face detection
+unknown face detection
+search(for that date)
+seach and give image
+
+
+
+
+
+
+import cv2
+import face_recognition
+import datetime
+import json
+import os
+
+# Load sample images of known individuals and their names
+known_images = [
+    ("known_person1.jpg", "Dhanush"),
+    ("known_person2.jpg", "Sanjay"),
+    ("known_person3.jpg", "Varma"),
+    ("known_person4.jpg", "Shyam"),
+    ("known_person5.jpg", "Thamil")
+    # Add more known individuals as needed
+]
+
+known_face_encodings = []
+known_face_names = []
+
+for image_path, name in known_images:
+    image = face_recognition.load_image_file(image_path)
+    face_encoding = face_recognition.face_encodings(image)[0]
+    known_face_encodings.append(face_encoding)
+    known_face_names.append(name)
+
+# Directory to store known face images and detected frames
+KNOWN_FACES_DIR = "known_faces"
+
+# Dictionary to store detected persons' information
+detected_persons = {}
+
+
+def save_detected_persons():
+    with open('detection_records.json', 'w') as file:
+        json.dump(detected_persons, file)
+
+
+def load_detected_persons():
+    try:
+        with open('detection_records.json', 'r') as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return {}
+
+
+def search_person(person_name):
+    if person_name in detected_persons:
+        detection_times = detected_persons[person_name]
+        last_detection_time = detection_times[-1] if detection_times else None
+
+        if last_detection_time:
+            image_path = f"{KNOWN_FACES_DIR}/{person_name}_{last_detection_time.replace(':', '-')}.jpg"  # Full image path
+            image = cv2.imread(image_path)
+            if image is not None:
+                cv2.imshow(f"{person_name} - Last Detection", image)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
+                print(f"{person_name} was last detected at {last_detection_time}")
+            else:
+                print(f"Image not found for {person_name} at {last_detection_time}")
+        else:
+            print(f"No detection records found for {person_name}")
+    else:
+        print(f"No detection records found for {person_name}")
+
+
+def save_detected_frame(person_name, frame):
+    current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    detected_persons[person_name].append(current_time)
+
+    # Overlay timestamp on the image
+    timestamp_text = f"{person_name} - {current_time}"
+    cv2.putText(frame, timestamp_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+    # Save entire detected frame as image
+    frame_path = f"{KNOWN_FACES_DIR}/{person_name}_{current_time.replace(':', '-')}.jpg"
+    cv2.imwrite(frame_path, frame)
+
+# ... Rest of the code ...
+
+def main():
+    global detected_persons  # Use the global detected_persons dictionary
+
+    detected_persons = load_detected_persons()  # Load previously detected information
+    load_known_faces()  # Load known faces at the beginning
+
+    cap = cv2.VideoCapture(0)  # Open the camera feed
+
+    while True:
+        ret, frame = cap.read()  # Read a frame from the camera
+
+        if not ret:
+            break
+
+        # Process the frame for face detection and recognition
+        face_locations = face_recognition.face_locations(frame)
+        face_encodings = face_recognition.face_encodings(frame, face_locations)
+
+        for face_encoding in face_encodings:
+            matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+            name = "Unknown Person"
+
+            for i, match in enumerate(matches):
+                if match:
+                    name = known_face_names[i]
+                    break
+
+            for (top, right, bottom, left) in face_locations:
+                cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
+                cv2.putText(frame, name, (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
+
+                # Save detected person's information and frame
+                if name != "Unknown Person":
+                    if name not in detected_persons:
+                        detected_persons[name] = []
+                    save_detected_frame(name, frame)  # Save the entire detected frame
+
+        cv2.imshow('Face Recognition', frame)  # Display the frame
+
+        # Search functionality
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('s'):
+            person_name = input("Enter person's name: ")
+            search_person(person_name)
+
+        if key == ord('q'):  # Exit loop when 'q' is pressed
+            save_detected_persons()  # Save detected information before quitting
+            break
+
+    cap.release()  # Release the camera feed
+    cv2.destroyAllWindows()  # Close the display window
+
+def load_known_faces():
+    if not os.path.exists(KNOWN_FACES_DIR):
+        os.makedirs(KNOWN_FACES_DIR)
+
+    for image_path, name in known_images:
+        known_face_path = f"{KNOWN_FACES_DIR}/{name}.jpg"
+        if not os.path.exists(known_face_path):
+            image = face_recognition.load_image_file(image_path)
+            cv2.imwrite(known_face_path, image)
+            update_known_faces(known_face_path, name)
+
+if __name__ == "__main__":
+    main()
