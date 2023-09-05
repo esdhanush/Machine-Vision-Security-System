@@ -1,6 +1,8 @@
-opencv-python==4.5.1.48  # Specify the version you mentioned.
+opencv-python==4.5.1.48
 mediapipe==0.9.0.1
 scikit-learn==1.2.0
 dlib==19.22.1  # Specify a compatible version of dlib
 cmake==3.18.2  # Specify a compatible version of cmake
 face-recognition==1.3.0
+Pillow==8.3.1  # Adding Pillow (PIL) explicitly for working with images
+numpy==1.21.2   # Adding numpy explicitly
