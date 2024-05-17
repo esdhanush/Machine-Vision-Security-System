@@ -39,7 +39,7 @@ The Machine Vision Security System is an advanced security solution leveraging m
 
 ## Contributors:
 - [E S Dhanush](https://github.com/esdhanush)
-- [Ravivarman K]()
+- [Ravivarman K](https://github.com/Ravivarmankumar)
 - [Sanjay S](link-to-contributor2-profile)
 - [Thamilthennarasu](link-to-contributor2-profile)
 - [Shyamsunder S](link-to-contributor2-profile)
